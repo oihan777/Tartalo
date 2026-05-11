@@ -4,7 +4,31 @@ const RAW_BASE =
     ? "http://localhost:8000"
     : "");
 
-export const API_BASE = RAW_BASE.replace(/\/$/, "");
+// Allow URLs like "https://user:pass@host/" — extract credentials so we can
+// pass them as Authorization headers (browser fetch doesn't reliably honour
+// userinfo in URLs).
+function splitBaseAndAuth(raw: string): { base: string; auth: string | null } {
+  if (!raw) return { base: "", auth: null };
+  try {
+    const u = new URL(raw);
+    let auth: string | null = null;
+    if (u.username || u.password) {
+      const creds = `${decodeURIComponent(u.username)}:${decodeURIComponent(
+        u.password
+      )}`;
+      auth = `Basic ${btoa(creds)}`;
+      u.username = "";
+      u.password = "";
+    }
+    const base = u.toString().replace(/\/$/, "");
+    return { base, auth };
+  } catch {
+    return { base: raw.replace(/\/$/, ""), auth: null };
+  }
+}
+
+const { base: API_BASE_CLEAN, auth: BASIC_AUTH } = splitBaseAndAuth(RAW_BASE);
+export const API_BASE = API_BASE_CLEAN;
 
 export async function apiFetch<T = unknown>(
   path: string,
@@ -15,6 +39,7 @@ export async function apiFetch<T = unknown>(
     ...options,
     headers: {
       Accept: "application/json",
+      ...(BASIC_AUTH ? { Authorization: BASIC_AUTH } : {}),
       ...(options.body && !(options.body instanceof FormData)
         ? { "Content-Type": "application/json" }
         : {}),
@@ -39,6 +64,7 @@ export async function uploadPcap(file: File): Promise<UploadResponse> {
   const res = await fetch(`${API_BASE}/api/captures`, {
     method: "POST",
     body: fd,
+    headers: BASIC_AUTH ? { Authorization: BASIC_AUTH } : undefined,
   });
   if (!res.ok) {
     let detail = res.statusText;
