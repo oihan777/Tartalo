@@ -1,0 +1,29 @@
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+backend/*.egg-info/
+backend/build/
+backend/dist/
+.env
+.env.local
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.log
+
+# Sample captures used for dev (kept out of repo)
+sample_pcaps/
+
+# Devin tmp
+/tmp/
